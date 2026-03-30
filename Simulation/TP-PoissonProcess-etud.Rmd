@@ -9,39 +9,36 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r simulPPh1,eval=FALSE}
-simulPPh1 <- function(lambda,Tmax)
-{
-  N <- rpois(1,lambda*Tmax)
-  U <- runif(N,0,Tmax)
-  
-    return(sort(U))
+```{r simulPPh,eval=FALSE}
+simulHPP <- function(lambda, Tmax) {
+  N <- rpois(1, lambda * Tmax)
+  U <- runif(N, 0, Tmax)
+  return(sort(U))
 }
 ```
 
 ```{r plot.PP}
 plot.PP<- function(PP)
 {
-  # plot the counting process (with jumps of size 1 (starting at point (0,0))):
-  plot(c(0,PP),0:length(PP),type="s",xlab="time t",ylab="number of events by time t")
-  # add the arrival times on the horizontal axis: 
-  points(PP,0*PP,type="p",pch=16)
-  # link arrival times with the counts:
-  lines(PP,0:(length(PP)-1),type="h",lty=2)
+# plot the counting process (with jumps of size 1 (starting at point (0,0))):
+plot(c(0,PP),0:length(PP),type="s",xlab="time t",ylab="number of events by time t")
+# add the arrival times on the horizontal axis:
+points(PP,0*PP,type="p",pch=16)
+# link arrival times with the counts:
+lines(PP,0:(length(PP)-1),type="h",lty=2)
 }
 ```
 
 # 1 - Inhomogeneous Poisson processes
 
-Simulation of an inhomogeneous Poisson processes with given intensity
-function `lambda_fct` on a fixed window [0,`Tmax`].
+Simulation of an inhomogeneous Poisson processes with given intensity function `lambda_fct` on a fixed window \[0,`Tmax`\].
 
 ```{r simulPPi,eval=FALSE}
 simulPPi = function(lambda_fct,Tmax,M)
 {
   M= lambda_fct(Tmax)
   res = NULL
-  PPh <- simulPPh1(M, Tmax)
+  PPh <- simulHPP(M, Tmax)
   U <- runif(length(PPh),0,M)
   for (i in 1:length(PPh)){
     if (U[i]< lambda_fct(PPh[i]))
@@ -57,6 +54,19 @@ simulPPi = function(lambda_fct,Tmax,M)
 
 ```{r simu, eval=FALSE, warning=TRUE}
 
+simulWeibull <- function(beta, theta, Tmax) {
+  M <- (beta/theta) * (Tmax/theta)^(beta-1)
+  
+  PPh <- simulPPh1(M, Tmax)
+  
+  U <- runif(length(PPh), 0, M)
+  lambda_t <- (beta/theta) * (PPh/theta)^(beta-1)
+  res <- PPh[U < lambda_t]
+  return(res)
+}
+
+
+
 Tmax=100
 
  
@@ -68,6 +78,8 @@ lambda_fct1 <- function(x){
 
 
 PPi1 = simulPPi(lambda_fct1, Tmax)
+
+plot(PPi1)
 ```
 
 ## Crow
@@ -86,23 +98,24 @@ curve(lambda_fct1,from=0,to=Tmax,n=1000)
 
 ```{r teststat,eval=FALSE}
 
-testCrow <- function(PP,Tmax)
+testCrow <- function(PP, Tmax, silent = FALSE)
 {
-  stat_test_Obs = 2*sum(log(Tmax/PP)) 
+  n <- length(PP)
   
-  p_value <-pchisq((stat_test_Obs),2*length(PP))
+  stat_test_Obs = 2 * sum(log(Tmax / PP)) 
   
-  print(paste("The Observed test Statistic is : ",stat_test_Obs))
-  print(paste("The p-value : ",p_value))
-
+  p_value <- pchisq(stat_test_Obs, 2 * n)
   
-  if (p_value< 0.05){
-    print("we reject H0 at level 5%, B is  greater than 1 ")}
-    else {
-        print("we do not reject H0 at level 5%, the data can't denied the fact that B could be 1 ")}
+  if (!silent) {
+    print(paste("The Observed Crow Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
     
-    
-  
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, Beta could be 1")
+    }
+  }
 
   return(p_value)
 }
@@ -110,7 +123,6 @@ testCrow <- function(PP,Tmax)
 
 
 
-testCrow(PPi1, Tmax)
 
 ```
 
@@ -120,31 +132,30 @@ testCrow(PPi1, Tmax)
 
 ```{r}
 
-testBarlow <- function(PP,Tmax)
+testBarlow <- function(PP, Tmax, silent = FALSE)
 {
-  n =length(PP)
-  d= floor(n/2)
+  n = length(PP)
+  if (n < 4) return(NA) 
   
-  stat_test_Obs = ((n-d)*PP[d])/(d*(PP[n]-PP[d]))
+  d = floor(n/2)
   
-  p_value <- 1- pf((stat_test_Obs),2*d, 2*(n-d))
+  stat_test_Obs = ((n - d) * PP[d]) / (d * (PP[n] - PP[d]))
   
-  print(paste("The Observed test Statistic is : ",stat_test_Obs))
-  print(paste("The p-value : ",p_value))
-
+  p_value <- 1 - pf(stat_test_Obs, 2 * d, 2 * (n - d))
   
-  if (p_value< 0.05){
-    print("we reject H0 at level 5%, B is  greater than 1 ")}
-    else {
-        print("we do not reject H0 at level 5%, the data can't denied the fact that B could be 1 ")}
+  if (!silent) {
+    print(paste("The Observed test Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
     
-    
-  
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, data suggests Beta could be 1")
+    }
+  }
 
   return(p_value)
 }
-
-testBarlow(PPi1)
 
 
 
@@ -153,32 +164,53 @@ testBarlow(PPi1)
 
 ```
 
+```{r}
+print("Barlow")
+
+testBarlow(PPSimu,Tmax)
+
+print("Crow")
+testCrow(PPSimu,Tmax)
+
+```
+
 # Power Comparaison
 
 ```{r}
-plot.level.power1 <- function(Tmax,beta0,TrueB,alpha,nsimu)
-{
-  plot(range(TrueLambda),c(alpha,alpha),ylim=c(0,1),xlab="True Beta",ylab="Level/Power",
-       type="l",col="red",main=paste("Beta0= ",beta0,",  Tmax = ",Tmax,sep=""))
-  abline(1,0,lty=2,col="blue")
+plot_puissance <- function(Tmax, liste_beta, nsimu) {
+  plot(NULL, xlim=range(liste_beta), ylim=c(0,1), 
+       xlab="Beta", ylab="Power",
+       main="Crow vs Barlow")
   
-  for(lambda in TrueLambda)
-  {
-    # estimating the proportion under lambda in TrueLambda
-    propReject=0
-    for(sim in 1:nsimu){
-      propReject=propReject+(testCrow(simulPPh1(b,Tmax),Tmax,b0) <= alpha)/nsimu
-    }
-  }
-}
-alpha=0.05
-nsimu=1000
-b0=1.5
-TrueB=c(1,1.5,1.8,1.9,2.2,2.5,3)
+  abline(h=0.05, col="red", lty=2)
 
-par(mfrow=c(1,2))
-for(Tmax in c(1,10,100,500))
-{
-  plot.level.power1(Tmax,b0, TrueB, alpha, nsimu)
+  for(b in liste_beta) {
+    
+    rejet_crow = 0
+    rejet_barlow = 0
+    
+    for(i in 1:nsimu) {
+      donnees <- simulWeibull(beta = b, theta = 1, Tmax = Tmax)
+      
+      p_c <- testCrow(donnees, Tmax, silent = TRUE)
+      p_b <- testBarlow(donnees, Tmax, silent = TRUE)
+      
+      if(!is.na(p_c) && p_c < 0.05) rejet_crow = rejet_crow + 1
+      if(!is.na(p_b) && p_b < 0.05) rejet_barlow = rejet_barlow + 1
+    }
+    
+    puissance_C = rejet_crow / nsimu
+    puissance_B = rejet_barlow / nsimu
+    
+    points(b, puissance_C, col="blue", pch=19) 
+    points(b, puissance_B, col="red", pch=17) 
+  }
+  
+  legend("bottomright", legend=c("Crow", "Barlow"), col=c("blue", "red"), pch=c(19, 17))
 }
+```
+
+```{r}
+betas_test <- c(seq(1, 1.5, by = 0.01), seq(1.5, 2, by = 0.1) )
+plot_puissance(Tmax = 100, betas_test, 100)
 ```
