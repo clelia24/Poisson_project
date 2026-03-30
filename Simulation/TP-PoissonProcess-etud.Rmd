@@ -2,14 +2,16 @@
 title: "Simulation of IHPP for Wiebull intensity function"
 author: "4 MA"
 date: "2025/2026"
-output: pdf_document
+output: html
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r simulPPh,eval=FALSE}
+# Generative Function
+
+```{r simulPPh}
 simulHPP <- function(lambda, Tmax) {
   N <- rpois(1, lambda * Tmax)
   U <- runif(N, 0, Tmax)
@@ -29,11 +31,7 @@ lines(PP,0:(length(PP)-1),type="h",lty=2)
 }
 ```
 
-# 1 - Inhomogeneous Poisson processes
-
-Simulation of an inhomogeneous Poisson processes with given intensity function `lambda_fct` on a fixed window \[0,`Tmax`\].
-
-```{r simulPPi,eval=FALSE}
+```{r simulPPi}
 simulPPi = function(lambda_fct,Tmax,M)
 {
   M= lambda_fct(Tmax)
@@ -50,53 +48,53 @@ simulPPi = function(lambda_fct,Tmax,M)
   }
 ```
 
+# Inhomogeneous Poisson processes With Weibull Intensity
+
 ### NHPP Simulation
 
-```{r simu, eval=FALSE, warning=TRUE}
+```{r simu, warning=TRUE}
+
+Weibull_I <- function(x, beta, theta) {
+  return((beta/theta) * (x/theta)^(beta-1))
+} 
+
 
 simulWeibull <- function(beta, theta, Tmax) {
-  M <- (beta/theta) * (Tmax/theta)^(beta-1)
+  f <- function(t) (beta/theta) * (t/theta)^(beta-1)
   
-  PPh <- simulPPh1(M, Tmax)
+  M_val <- f(Tmax)
   
-  U <- runif(length(PPh), 0, M)
-  lambda_t <- (beta/theta) * (PPh/theta)^(beta-1)
-  res <- PPh[U < lambda_t]
-  return(res)
+  return(simulPPi(f, Tmax, M_val))
 }
-
-
-
 Tmax=100
 
- 
-lambda_fct1 <- function(x){
-  beta = 1.09
-  teta = 1
-  return((beta/teta)*(x/teta)^(beta-1))}
 
 
 
-PPi1 = simulPPi(lambda_fct1, Tmax)
-
-plot(PPi1)
 ```
+
+## SImulation and plot
+
+```{r plot}
+Beta_val <- 1.5 
+Theta_val <- 1
+Tmax_val <- 100
+PPSimu <- simulWeibull(Beta_val,Theta_val, Tmax_val)
+
+par(mfrow=c(1,2))
+plot.PP(PPSimu)
+curve(Weibull_I(x, Beta_val, Theta_val), 
+      from = 0, to = Tmax_val, 
+      col = "red", lwd = 2, 
+      main = "")
+
+```
+
+# Statistical Test
 
 ## Crow
 
-```{r lambda1,eval=FALSE}
-
-
-# plot:
-par(mfrow=c(1,2))
-plot.PP(PPi1)
-curve(lambda_fct1,from=0,to=Tmax,n=1000)
-
-```
-
-### Test Statistic :
-
-```{r teststat,eval=FALSE}
+```{r teststat}
 
 testCrow <- function(PP, Tmax, silent = FALSE)
 {
@@ -128,8 +126,6 @@ testCrow <- function(PP, Tmax, silent = FALSE)
 
 ## Barlow
 
-### Test Statistic :
-
 ```{r}
 
 testBarlow <- function(PP, Tmax, silent = FALSE)
@@ -157,26 +153,20 @@ testBarlow <- function(PP, Tmax, silent = FALSE)
   return(p_value)
 }
 
-
-
-
-
-
 ```
 
-```{r}
-print("Barlow")
-
+```{r, test execution}
+print("------Barlow------")
 testBarlow(PPSimu,Tmax)
 
-print("Crow")
+print("------Crow------")
 testCrow(PPSimu,Tmax)
 
 ```
 
 # Power Comparaison
 
-```{r}
+```{r, power}
 plot_puissance <- function(Tmax, liste_beta, nsimu) {
   plot(NULL, xlim=range(liste_beta), ylim=c(0,1), 
        xlab="Beta", ylab="Power",
@@ -195,15 +185,15 @@ plot_puissance <- function(Tmax, liste_beta, nsimu) {
       p_c <- testCrow(donnees, Tmax, silent = TRUE)
       p_b <- testBarlow(donnees, Tmax, silent = TRUE)
       
-      if(!is.na(p_c) && p_c < 0.05) rejet_crow = rejet_crow + 1
-      if(!is.na(p_b) && p_b < 0.05) rejet_barlow = rejet_barlow + 1
+      if(p_c < 0.05) rejet_crow = rejet_crow + 1
+      if(p_b < 0.05) rejet_barlow = rejet_barlow + 1
     }
     
     puissance_C = rejet_crow / nsimu
     puissance_B = rejet_barlow / nsimu
     
-    points(b, puissance_C, col="blue", pch=19) 
-    points(b, puissance_B, col="red", pch=17) 
+    points(b, puissance_C, col="blue", pch=20) 
+    points(b, puissance_B, col="red", pch=20) 
   }
   
   legend("bottomright", legend=c("Crow", "Barlow"), col=c("blue", "red"), pch=c(19, 17))
@@ -211,6 +201,6 @@ plot_puissance <- function(Tmax, liste_beta, nsimu) {
 ```
 
 ```{r}
-betas_test <- c(seq(1, 1.5, by = 0.01), seq(1.5, 2, by = 0.1) )
-plot_puissance(Tmax = 100, betas_test, 100)
+betas_test <- c(seq(1, 1.5, by = 0.01))
+plot_puissance(Tmax = 200, betas_test, 200)
 ```
