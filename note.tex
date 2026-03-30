@@ -1,0 +1,58 @@
+\documentclass[a4paper,12pt]{article}
+
+% Langue et encodage
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% Packages mathématiques
+\usepackage{amsmath, amssymb, amsfonts, float}
+\usepackage{csquotes}        % recommandé avec biblatex
+\usepackage[
+  backend=biber,
+  style=numeric
+]{biblatex}
+\addbibresource{Ref.bib}
+\usepackage{algorithm}
+\usepackage{algpseudocode}  % recommandé à la place de 'algorithmic'
+
+% hyperref TOUJOURS après biblatex
+\usepackage{hyperref}
+\usepackage{graphicx}   % pour ajouter un logo si besoin
+\usepackage{titling}    % pour personnaliser la page de titre
+\usepackage{setspace}   % pour espacement
+\usepackage{tikz}
+
+\usepackage{color}       % pour couleur du texte si besoin
+\usepackage{geometry}    % pour configurer les marges
+\usepackage{fancyhdr}    % pour en-têtes et pieds de page
+\setlength{\parskip}{0.5em} % espace vertical entre les paragraphes
+\usepackage{tocloft}
+\usepackage{subcaption} % pour les sous-figures
+\usepackage{background}
+
+
+
+
+% Configuration des marges
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+
+
+%
+
+
+
+
+\begin{document}
+
+\section{Crow}
+
+Statistique de Teste : $ Z = 2*\sum_{i=1}^{n} log(T)$
+
+\end{document}

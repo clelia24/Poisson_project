@@ -1,0 +1,184 @@
+---
+title: "Simulation of IHPP for Wiebull intensity function"
+author: "4 MA"
+date: "2025/2026"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r simulPPh1,eval=FALSE}
+simulPPh1 <- function(lambda,Tmax)
+{
+  N <- rpois(1,lambda*Tmax)
+  U <- runif(N,0,Tmax)
+  
+    return(sort(U))
+}
+```
+
+```{r plot.PP}
+plot.PP<- function(PP)
+{
+  # plot the counting process (with jumps of size 1 (starting at point (0,0))):
+  plot(c(0,PP),0:length(PP),type="s",xlab="time t",ylab="number of events by time t")
+  # add the arrival times on the horizontal axis: 
+  points(PP,0*PP,type="p",pch=16)
+  # link arrival times with the counts:
+  lines(PP,0:(length(PP)-1),type="h",lty=2)
+}
+```
+
+# 1 - Inhomogeneous Poisson processes
+
+Simulation of an inhomogeneous Poisson processes with given intensity
+function `lambda_fct` on a fixed window [0,`Tmax`].
+
+```{r simulPPi,eval=FALSE}
+simulPPi = function(lambda_fct,Tmax,M)
+{
+  M= lambda_fct(Tmax)
+  res = NULL
+  PPh <- simulPPh1(M, Tmax)
+  U <- runif(length(PPh),0,M)
+  for (i in 1:length(PPh)){
+    if (U[i]< lambda_fct(PPh[i]))
+      {
+      res <- append(res, PPh[i])
+    }
+  }
+    return(sort(res))
+  }
+```
+
+### NHPP Simulation
+
+```{r simu, eval=FALSE, warning=TRUE}
+
+Tmax=100
+
+ 
+lambda_fct1 <- function(x){
+  beta = 1.09
+  teta = 1
+  return((beta/teta)*(x/teta)^(beta-1))}
+
+
+
+PPi1 = simulPPi(lambda_fct1, Tmax)
+```
+
+## Crow
+
+```{r lambda1,eval=FALSE}
+
+
+# plot:
+par(mfrow=c(1,2))
+plot.PP(PPi1)
+curve(lambda_fct1,from=0,to=Tmax,n=1000)
+
+```
+
+### Test Statistic :
+
+```{r teststat,eval=FALSE}
+
+testCrow <- function(PP,Tmax)
+{
+  stat_test_Obs = 2*sum(log(Tmax/PP)) 
+  
+  p_value <-pchisq((stat_test_Obs),2*length(PP))
+  
+  print(paste("The Observed test Statistic is : ",stat_test_Obs))
+  print(paste("The p-value : ",p_value))
+
+  
+  if (p_value< 0.05){
+    print("we reject H0 at level 5%, B is  greater than 1 ")}
+    else {
+        print("we do not reject H0 at level 5%, the data can't denied the fact that B could be 1 ")}
+    
+    
+  
+
+  return(p_value)
+}
+
+
+
+
+testCrow(PPi1, Tmax)
+
+```
+
+## Barlow
+
+### Test Statistic :
+
+```{r}
+
+testBarlow <- function(PP,Tmax)
+{
+  n =length(PP)
+  d= floor(n/2)
+  
+  stat_test_Obs = ((n-d)*PP[d])/(d*(PP[n]-PP[d]))
+  
+  p_value <- 1- pf((stat_test_Obs),2*d, 2*(n-d))
+  
+  print(paste("The Observed test Statistic is : ",stat_test_Obs))
+  print(paste("The p-value : ",p_value))
+
+  
+  if (p_value< 0.05){
+    print("we reject H0 at level 5%, B is  greater than 1 ")}
+    else {
+        print("we do not reject H0 at level 5%, the data can't denied the fact that B could be 1 ")}
+    
+    
+  
+
+  return(p_value)
+}
+
+testBarlow(PPi1)
+
+
+
+
+
+
+```
+
+# Power Comparaison
+
+```{r}
+plot.level.power1 <- function(Tmax,beta0,TrueB,alpha,nsimu)
+{
+  plot(range(TrueLambda),c(alpha,alpha),ylim=c(0,1),xlab="True Beta",ylab="Level/Power",
+       type="l",col="red",main=paste("Beta0= ",beta0,",  Tmax = ",Tmax,sep=""))
+  abline(1,0,lty=2,col="blue")
+  
+  for(lambda in TrueLambda)
+  {
+    # estimating the proportion under lambda in TrueLambda
+    propReject=0
+    for(sim in 1:nsimu){
+      propReject=propReject+(testCrow(simulPPh1(b,Tmax),Tmax,b0) <= alpha)/nsimu
+    }
+  }
+}
+alpha=0.05
+nsimu=1000
+b0=1.5
+TrueB=c(1,1.5,1.8,1.9,2.2,2.5,3)
+
+par(mfrow=c(1,2))
+for(Tmax in c(1,10,100,500))
+{
+  plot.level.power1(Tmax,b0, TrueB, alpha, nsimu)
+}
+```
