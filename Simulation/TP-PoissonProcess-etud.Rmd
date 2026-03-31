@@ -2,6 +2,7 @@
 title: "Simulation of IHPP for Wiebull intensity function"
 author: "4 MA"
 date: "2025/2026"
+
 output: html
 ---
 
@@ -196,11 +197,16 @@ plot_puissance <- function(Tmax, liste_beta, nsimu) {
     points(b, puissance_B, col="red", pch=20) 
   }
   
-  legend("bottomright", legend=c("Crow", "Barlow"), col=c("blue", "red"), pch=c(19, 17))
+  legend("topright", legend=c("Crow", "Barlow"), col=c("blue", "red"), pch=c(20, 20))
 }
 ```
 
 ```{r}
-betas_test <- c(seq(1, 1.5, by = 0.01))
+betas_test <- c(seq(1, 1.35, by = 0.01))
+plot_puissance(Tmax = 200, betas_test, 200)
+```
+
+```{r}
+betas_test <- c(seq(1, 1.1, by = 0.001))
 plot_puissance(Tmax = 200, betas_test, 200)
 ```
