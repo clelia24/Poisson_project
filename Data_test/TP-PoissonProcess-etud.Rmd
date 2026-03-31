@@ -1,0 +1,120 @@
+---
+title: "Test on dataset"
+author: "4 MA"
+date: "2025/2026"
+
+output: html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Import data and format
+
+```{r}
+library(ismev)
+library(evd)
+library(tseries)
+
+data(danish, package = "evir")
+
+df<-data.frame(time = attr(danish,"times"),
+              claim = as.numeric(danish))
+
+
+```
+
+# Exploratory analysis
+
+```{r}
+summary(df$claim)
+
+plot(df$time, df$claim, type ="l")
+
+hist(log(df$claim))
+
+
+
+
+
+
+```
+
+# Statistical Test on the dataset
+
+## Crow
+
+```{r teststat}
+
+testCrow <- function(PP, Tmax, silent = FALSE)
+{
+  n <- length(PP)
+  
+  stat_test_Obs = 2 * sum(log(Tmax / PP)) 
+  
+  p_value <- pchisq(stat_test_Obs, 2 * n)
+  
+  if (!silent) {
+    print(paste("The Observed Crow Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
+    
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, Beta could be 1")
+    }
+  }
+
+  return(p_value)
+}
+
+
+
+
+
+```
+
+## Barlow
+
+```{r}
+
+testBarlow <- function(PP, Tmax, silent = FALSE)
+{
+  n = length(PP)
+  if (n < 4) return(NA) 
+  
+  d = floor(n/2)
+  
+  stat_test_Obs = ((n - d) * PP[d]) / (d * (PP[n] - PP[d]))
+  
+  p_value <- 1 - pf(stat_test_Obs, 2 * d, 2 * (n - d))
+  
+  if (!silent) {
+    print(paste("The Observed test Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
+    
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, data suggests Beta could be 1")
+    }
+  }
+
+  return(p_value)
+}
+
+```
+
+```{r, test execution}
+Tmax= length(df$claim)
+
+print("------Barlow------")
+testBarlow(df$claim,Tmax)
+
+print("------Crow------")
+testCrow(df$claim,Tmax)
+
+```
+
+#
