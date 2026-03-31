@@ -1,0 +1,301 @@
+---
+title: "Simulation of IHPP for Wiebull intensity function"
+author: "4 MA"
+date: "2025/2026"
+
+output: html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Generative Function
+
+```{r simulPPh}
+simulHPP <- function(lambda, Tmax) {
+  N <- rpois(1, lambda * Tmax)
+  U <- runif(N, 0, Tmax)
+  return(sort(U))
+}
+```
+
+```{r plot.PP}
+plot.PP<- function(PP)
+{
+# plot the counting process (with jumps of size 1 (starting at point (0,0))):
+plot(c(0,PP),0:length(PP),type="s",xlab="time t",ylab="number of events by time t")
+# add the arrival times on the horizontal axis:
+points(PP,0*PP,type="p",pch=16)
+# link arrival times with the counts:
+lines(PP,0:(length(PP)-1),type="h",lty=2)
+}
+```
+
+```{r simulPPi}
+
+simulPPi <- function(lambda_fct, Tmax, M) {
+  res <- NULL
+  PPh <- simulHPP(M, Tmax)
+  if(length(PPh) == 0) return(NULL)
+  
+  U <- runif(length(PPh), 0, M)
+  for (i in 1:length(PPh)) {
+    if (U[i] < lambda_fct(PPh[i])) {
+      res <- append(res, PPh[i])
+    }
+  }
+  return(sort(res))
+}
+
+
+
+```
+
+# Inhomogeneous Poisson processes With Weibull Intensity
+
+### NHPP Simulation
+
+```{r simu, warning=TRUE}
+
+Weibull_I <- function(x, beta, theta) (beta/theta) * (x/theta)^(beta-1)
+
+Poly_I <- function(x, beta, theta) (1/theta) + (beta - 1) * (x/theta)^2
+
+
+
+
+
+```
+
+```{r, simulationbnis}
+
+simulWeibull <- function(beta, theta, Tmax) {
+  f <- function(t) Weibull_I(t, beta, theta)
+  M_val <- f(Tmax)
+  return(simulPPi(f, Tmax, M_val))
+}
+
+
+
+# Simulation Polynomiale
+simulPoly <- function(beta, theta, Tmax) {
+  f <- function(t) Poly_I(t, beta, theta)
+  
+  M_val <- max(f(0), f(Tmax))
+  
+  return(simulPPi(f, Tmax, M_val))
+}
+
+
+
+
+```
+
+## SImulation and plot
+
+```{r plot}
+
+Beta_val <- 1.5 
+Theta_val <- 3
+Tmax_val <- 50
+
+
+# --- Affichage Weibull ---
+simW <- simulWeibull(Beta_val, Theta_val, Tmax_val)
+plot.PP(simW); title("Weibull Process")
+curve(Weibull_I(x, Beta_val, Theta_val), 0, Tmax_val, col="red", lwd=2, main="Intensity")
+
+
+# --- Affichage Polynomiale ---
+simP <- simulPoly(Beta_val, Theta_val, Tmax_val)
+plot.PP(simP); title("Poly Process")
+curve(Poly_I(x, Beta_val, Theta_val), 0, Tmax_val, col="red", lwd=2)
+
+
+
+
+
+
+```
+
+# Statistical Test
+
+## Crow
+
+```{r teststat}
+
+testCrow <- function(PP, Tmax, silent = FALSE)
+{
+  n <- length(PP)
+  
+  stat_test_Obs = 2 * sum(log(Tmax / PP)) 
+  
+  p_value <- pchisq(stat_test_Obs, 2 * n)
+  
+  if (!silent) {
+    print(paste("The Observed Crow Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
+    
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, Beta could be 1")
+    }
+  }
+
+  return(p_value)
+}
+
+
+
+
+
+```
+
+## Barlow
+
+```{r}
+
+testBarlow <- function(PP, Tmax, silent = FALSE)
+{
+  n = length(PP)
+  if (n < 4) return(NA) 
+  
+  d = floor(n/2)
+  
+  stat_test_Obs = ((n - d) * PP[d]) / (d * (PP[n] - PP[d]))
+  
+  p_value <- 1 - pf(stat_test_Obs, 2 * d, 2 * (n - d))
+  
+  if (!silent) {
+    print(paste("The Observed test Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
+    
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, data suggests Beta could be 1")
+    }
+  }
+
+  return(p_value)
+}
+
+```
+
+```{r, test execution}
+Tmax=100
+
+print("------Barlow------")
+testBarlow(simL,Tmax)
+
+print("------Crow------")
+testCrow(simL,Tmax)
+
+```
+
+# Power Comparaison
+
+```{r, power}
+plot_puissance <- function(Tmax, liste_beta, nsimu) {
+  plot(NULL, xlim=range(liste_beta), ylim=c(0,1), 
+       xlab="Beta", ylab="Power",
+       main="Crow vs Barlow")
+  
+  abline(h=0.05, col="red", lty=2)
+
+  for(b in liste_beta) {
+    
+    rejet_crow = 0
+    rejet_barlow = 0
+    
+    for(i in 1:nsimu) {
+      donnees <- simulWeibull(beta = b, theta = 1, Tmax = Tmax)
+      
+      p_c <- testCrow(donnees, Tmax, silent = TRUE)
+      p_b <- testBarlow(donnees, Tmax, silent = TRUE)
+      
+      if(p_c < 0.05) rejet_crow = rejet_crow + 1
+      if(p_b < 0.05) rejet_barlow = rejet_barlow + 1
+    }
+    
+    puissance_C = rejet_crow / nsimu
+    puissance_B = rejet_barlow / nsimu
+    
+    points(b, puissance_C, col="blue", pch=20) 
+    points(b, puissance_B, col="red", pch=20) 
+  }
+  
+  legend("topright", legend=c("Crow", "Barlow"), col=c("blue", "red"), pch=c(20, 20))
+}
+```
+
+```{r}
+betas_test <- c(seq(1, 1.35, by = 0.01))
+plot_puissance(Tmax = 200, betas_test, 200)
+```
+
+```{r}
+betas_test <- c(seq(1, 1.1, by = 0.001))
+plot_puissance(Tmax = 200, betas_test, 200)
+```
+
+```{r}
+plot_puissance_generique <- function(simul_func, liste_beta, Tmax, nsimu, theta = 1, ...) {
+  
+  puissances_C <- numeric(length(liste_beta))
+  puissances_B <- numeric(length(liste_beta))
+  
+  plot(NULL, xlim=range(liste_beta), ylim=c(0, 1), 
+       xlab="Beta (Paramètre de croissance)", ylab="Puissance (Taux de rejet)",
+       main=paste("Puissance des tests Crow vs Barlow"))
+  
+  abline(h=0.05, col="darkgrey", lty=2)
+
+  for(j in 1:length(liste_beta)) {
+    b <- liste_beta[j]
+    rejet_crow <- 0
+    rejet_barlow <- 0
+    
+    for(i in 1:nsimu) {
+
+      donnees <- simul_func(beta = b, theta = theta, Tmax = Tmax, ...)
+      
+      if(length(donnees) > 1) {
+        p_c <- testCrow(donnees, Tmax, silent = TRUE)
+        p_b <- testBarlow(donnees, Tmax, silent = TRUE)
+        
+        if( p_c < 0.05) rejet_crow <- rejet_crow + 1
+        if(p_b < 0.05) rejet_barlow <- rejet_barlow + 1
+      }
+    }
+    
+    puissances_C[j] <- rejet_crow / nsimu
+    puissances_B[j] <- rejet_barlow / nsimu
+  }
+  
+  lines(liste_beta, puissances_C, col="blue", lwd=2, type="b", pch=19)
+  lines(liste_beta, puissances_B, col="red", lwd=2, type="b", pch=17)
+  
+  legend("bottomright", legend=c("Crow", "Barlow"), 
+         col=c("blue", "red"), lwd=2, pch=c(19, 17), bty="n")
+}
+```
+
+```{r}
+mes_betas <- seq(1, 2, by=0.2) 
+Tmax_val <- 50
+N_reps <- 20
+
+
+# 1. Puissance sur Weibull
+plot_puissance_generique(simulWeibull, mes_betas, Tmax_val, N_reps)
+title(sub="Modèle : Weibull")
+
+# 3. Puissance sur Polynomiale
+plot_puissance_generique(simulPoly, mes_betas, Tmax_val, N_reps)
+title(sub="Modèle : Polynomiale")
+
+
+```
