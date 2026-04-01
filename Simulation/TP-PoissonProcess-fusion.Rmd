@@ -1,0 +1,324 @@
+---
+title: "Simulation of IHPP for different intensity function"
+author: "Lucas Rosas, Jeanne Marque, Clélia Desjean and Marwan Noua (4A MA)"
+date: "2025/2026"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Generative Functions
+
+For this part we used the functions used in the TP
+
+```{r simulPPh}
+simulHPP <- function(lambda, Tmax) {
+  N <- rpois(1, lambda * Tmax)
+  U <- runif(N, 0, Tmax)
+  return(sort(U))
+}
+```
+
+```{r plot.PP}
+plot.PP <- function(PP) {
+  plot(c(0, PP), 0:length(PP), type = "s",
+       xlab = "time t", ylab = "number of events by time t")
+  points(PP, 0 * PP, type = "p", pch = 16)
+  lines(PP, 0:(length(PP) - 1), type = "h", lty = 2)
+}
+```
+
+```{r simulPPi}
+simulPPi <- function(lambda_fct, Tmax, M) {
+  res  <- NULL
+  PPh  <- simulHPP(M, Tmax)
+  if (length(PPh) == 0) return(NULL)
+  U <- runif(length(PPh), 0, M)
+  for (i in 1:length(PPh)) {
+    if (U[i] < lambda_fct(PPh[i])) res <- append(res, PPh[i])
+  }
+  return(sort(res))
+}
+```
+
+------------------------------------------------------------------------
+
+# Inhomogeneous Poisson Processes
+
+## Intensity functions
+
+We define different intensity functions such that for $H_0 : \beta =1$ the intensity has a constant rate.
+
+```{r intensities}
+Weibull_I <- function(x, beta, theta) (beta / theta) * (x / theta)^(beta - 1)
+I_exp    <- function(t, beta, theta) (1/50*theta) * exp((beta - 1) * t / 50*theta)
+I_sqrt <- function(t, beta, theta) (1/theta) * sqrt(1 + (beta - 1) * t / theta)
+I_log <- function(t, beta, theta) (1/theta) * (1 + (beta - 1) * log(1 + t / theta))
+```
+
+## Simulation functions
+
+We now define the function needed to simulate the PP for each intensity function
+
+```{r simulations}
+simulWeibull <- function(beta, theta, Tmax) {
+  f     <- function(t) Weibull_I(t, beta, theta)
+  M_val <- f(Tmax)
+  return(simulPPi(f, Tmax, M_val))
+}
+
+
+simulLog <- function(beta, theta, Tmax) {
+  f     <- function(t) I_log(t, beta, theta)
+  M_val <- f(Tmax)
+  return(simulPPi(f, Tmax, M_val))
+}
+
+simulExp <- function(beta, theta, Tmax) {
+  f     <- function(t) I_exp(t, beta, theta)
+  M_val <- f(Tmax)
+  return(simulPPi(f, Tmax, M_val))
+}
+
+simulSqrt <- function(beta, theta, Tmax) {
+  f     <- function(t) I_sqrt(t, beta, theta)
+  M_val <- f(Tmax)
+  return(simulPPi(f, Tmax, M_val))
+}
+
+
+```
+
+## Simulation and plot
+
+Let's see !
+
+```{r plot}
+Beta_val  <- 1.5
+Theta_val <- 2
+Tmax_val  <- 100
+
+par(mfrow = c(1, 2))
+simW <- simulWeibull(Beta_val, Theta_val, Tmax_val)
+plot.PP(simW); title("Weibull Process")
+curve(Weibull_I(x, Beta_val, Theta_val), 0, Tmax_val, col = "red", lwd = 2, main = "Weibull Intensity")
+
+par(mfrow = c(1, 2))
+simL <- simulLog(Beta_val, Theta_val, Tmax_val)
+plot.PP(simL); title("Log Process")
+curve(I_log(x, Beta_val, Theta_val), 0, Tmax_val, col = "red", lwd = 2, main = "Log Intensity")
+
+
+par(mfrow = c(1, 2))
+simE <- simulExp(Beta_val, Theta_val, Tmax_val)
+plot.PP(simE); title("Exp Process")
+curve(I_exp(x, Beta_val, Theta_val), 0, Tmax_val, col = "red", lwd = 2, main = "Exp Intensity")
+
+
+par(mfrow = c(1, 2))
+simS <- simulSqrt(Beta_val, Theta_val, Tmax_val)
+plot.PP(simS); title("Sqrt Process")
+curve(I_sqrt(x, Beta_val, Theta_val), 0, Tmax_val, col = "red", lwd = 2, main = "Sqrt Intensity")
+```
+
+------------------------------------------------------------------------
+
+# Statistical Tests
+
+We now want to implement the Crow and Barlow test presented in the paper.
+
+We added a silent parameter to choose whether we want a text response in the style of t.test.
+
+## Crow test
+
+```{r testCrow}
+testCrow <- function(PP, Tmax, silent = FALSE)
+{
+  n <- length(PP)
+  
+  stat_test_Obs = 2 * sum(log(Tmax / PP)) 
+  
+  p_value <- pchisq(stat_test_Obs, 2 * n)
+  
+  if (!silent) {
+    print(paste("The Observed Crow Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
+    
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, Beta could be 1")
+    }
+  }
+
+  return(p_value)
+}
+```
+
+## Barlow test
+
+```{r testBarlow}
+testBarlow <- function(PP, Tmax, silent = FALSE)
+{
+  n = length(PP)
+  if (n < 4) return(NA) 
+  
+  d = floor(n/2)
+  
+  stat_test_Obs = ((n - d) * PP[d]) / (d * (PP[n] - PP[d]))
+  
+  p_value <- 1 - pf(stat_test_Obs, 2 * d, 2 * (n - d))
+  
+  if (!silent) {
+    print(paste("The Observed test Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
+    
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, data suggests Beta could be 1")
+    }
+  }
+
+  return(p_value)
+}
+
+```
+
+## Example test execution
+
+```{r test_execution}
+Tmax <- 100
+set.seed(42)
+simEx <- simulWeibull(beta = 1.5, theta = 1, Tmax = Tmax)
+
+print("------ Barlow ------")
+testBarlow(simEx, Tmax)
+
+print("------ Crow ------")
+testCrow(simEx, Tmax)
+```
+
+------------------------------------------------------------------------
+
+Power Analysis
+We now want to analyze our test’s power. To do so, we will first see how the tests respond to different values of $\beta$ and then to different values of $T_{\max}$.
+
+## 1. Power as a function of Beta
+
+```{r power_vs_beta}
+plot_puissance_beta <- function(simul_func, liste_beta, Tmax, nsimu,
+                                theta = 1, titre = "") {
+  puissances_C <- numeric(length(liste_beta))
+  puissances_B <- numeric(length(liste_beta))
+
+  for (j in seq_along(liste_beta)) {
+    b            <- liste_beta[j]
+    rejet_crow   <- 0
+    rejet_barlow <- 0
+
+    for (i in 1:nsimu) {
+      donnees <- simul_func(beta = b, theta = theta, Tmax = Tmax)
+      if (length(donnees) > 1) {
+        p_c <- testCrow(donnees, Tmax, silent = TRUE)
+        p_b <- testBarlow(donnees, Tmax, silent = TRUE)
+        if (!is.na(p_c) && p_c < 0.05) rejet_crow   <- rejet_crow   + 1
+        if (!is.na(p_b) &&p_b < 0.05) rejet_barlow <- rejet_barlow + 1
+      }
+    }
+    puissances_C[j] <- rejet_crow   / nsimu
+    puissances_B[j] <- rejet_barlow / nsimu
+  }
+
+  plot(NULL, xlim = range(liste_beta), ylim = c(0, 1),
+       xlab = "Beta", ylab = "Power (rejection rate)",
+       main = paste("Power vs Beta —", titre, "| Tmax =", Tmax))
+  abline(h = 0.05, col = "darkgrey", lty = 2)
+  lines(liste_beta, puissances_C, col = "blue", lwd = 2, type = "b", pch = 19)
+  lines(liste_beta, puissances_B, col = "red",  lwd = 2, type = "b", pch = 17)
+  legend("bottomright", legend = c("Crow", "Barlow"),
+         col = c("blue", "red"), lwd = 2, pch = c(19, 17), bty = "n")
+}
+```
+
+```{r run_power_beta, fig.width=10, fig.height=5}
+betas_test <- seq(1, 1.5, by = 0.1)
+nsimu      <- 100
+
+par(mfrow = c(2, 2))
+plot_puissance_beta(simulWeibull, betas_test, Tmax = 100, nsimu = nsimu,
+                    theta = 1, titre = "Weibull")
+
+
+plot_puissance_beta(simulLog, betas_test, Tmax = 100, nsimu = nsimu,
+                    theta = 1, titre = "Log")
+
+plot_puissance_beta(simulSqrt, betas_test, Tmax = 100, nsimu = nsimu,
+                    theta = 1, titre = "Sqrt")
+
+plot_puissance_beta(simulExp, betas_test, Tmax = 100, nsimu = nsimu,
+                    theta = 1, titre = "Exp")
+```
+
+------------------------------------------------------------------------
+
+## 2. Power as a function of Tmax (fixed Beta)
+
+```{r power_vs_tmax}
+plot_puissance_tmax <- function(simul_func, liste_Tmax, beta_fixe, nsimu,
+                                theta = 1, titre = "") {
+  puissances_C <- numeric(length(liste_Tmax))
+  puissances_B <- numeric(length(liste_Tmax))
+
+  for (j in seq_along(liste_Tmax)) {
+    Tmax         <- liste_Tmax[j]
+    rejet_crow   <- 0
+    rejet_barlow <- 0
+
+    for (i in 1:nsimu) {
+      donnees <- simul_func(beta = beta_fixe, theta = theta, Tmax = Tmax)
+      if (length(donnees) >= 4) {
+        p_c <- testCrow(donnees, Tmax, silent = TRUE)
+        p_b <- testBarlow(donnees, Tmax, silent = TRUE)
+        if (!is.na(p_c) &&p_c < 0.05) rejet_crow   <- rejet_crow   + 1
+        if ( !is.na(p_b) &&p_b < 0.05) rejet_barlow <- rejet_barlow + 1
+      }
+    }
+    puissances_C[j] <- rejet_crow   / nsimu
+    puissances_B[j] <- rejet_barlow / nsimu
+  }
+
+  plot(NULL, xlim = range(liste_Tmax), ylim = c(0, 1),
+       xlab = "Tmax (observation window)", ylab = "Power (rejection rate)",
+       main = paste("Power vs Tmax —", titre, "| Beta =", beta_fixe))
+  abline(h = 0.05, col = "darkgrey", lty = 2)
+  lines(liste_Tmax, puissances_C, col = "blue", lwd = 2, type = "b", pch = 19)
+  lines(liste_Tmax, puissances_B, col = "red",  lwd = 2, type = "b", pch = 17)
+  legend("bottomright", legend = c("Crow", "Barlow"),
+         col = c("blue", "red"), lwd = 2, pch = c(19, 17), bty = "n")
+}
+```
+
+```{r run_power_tmax, fig.width=10, fig.height=5}
+liste_Tmax <- seq(10, 200, by = 20)
+beta_fixe  <- 1.3
+nsimu      <- 200
+
+par(mfrow = c(2, 2))
+plot_puissance_tmax(simulWeibull, liste_Tmax, beta_fixe = beta_fixe,
+                    nsimu = nsimu, theta = 1, titre = "Weibull")
+
+plot_puissance_tmax(simulLog, liste_Tmax, beta_fixe = beta_fixe,
+                    nsimu = nsimu, theta = 1, titre = "Log")
+
+plot_puissance_tmax(simulExp, liste_Tmax, beta_fixe = beta_fixe,
+                    nsimu = nsimu, theta = 1, titre = "Exp")
+
+plot_puissance_tmax(simulSqrt, liste_Tmax, beta_fixe = beta_fixe,
+                    nsimu = nsimu, theta = 1, titre = "Sqrt")
+
+```
+
+------------------------------------------------------------------------
