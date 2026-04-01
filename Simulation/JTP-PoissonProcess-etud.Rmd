@@ -1,0 +1,281 @@
+---
+title: "Simulation of IHPP for Wiebull intensity function"
+author: "4 MA"
+date: "2025/2026"
+output: html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Generative Function
+
+```{r simulPPh}
+simulHPP <- function(lambda, Tmax) {
+  N <- rpois(1, lambda * Tmax)
+  U <- runif(N, 0, Tmax)
+  return(sort(U))
+}
+```
+
+```{r plot.PP}
+plot.PP<- function(PP)
+{
+# plot the counting process (with jumps of size 1 (starting at point (0,0))):
+plot(c(0,PP),0:length(PP),type="s",xlab="time t",ylab="number of events by time t")
+# add the arrival times on the horizontal axis:
+points(PP,0*PP,type="p",pch=16)
+# link arrival times with the counts:
+lines(PP,0:(length(PP)-1),type="h",lty=2)
+}
+```
+
+```{r simulPPi}
+simulPPi = function(lambda_fct,Tmax,M)
+{
+  M= lambda_fct(Tmax)
+  res = NULL
+  PPh <- simulHPP(M, Tmax)
+  U <- runif(length(PPh),0,M)
+  for (i in 1:length(PPh)){
+    if (U[i]< lambda_fct(PPh[i]))
+      {
+      res <- append(res, PPh[i])
+    }
+  }
+    return(sort(res))
+  }
+```
+
+# Inhomogeneous Poisson processes With Weibull Intensity
+
+### NHPP Simulation
+
+```{r simu, warning=TRUE}
+
+Weibull_I <- function(x, beta, theta) {
+  return((beta/theta) * (x/theta)^(beta-1))
+} 
+
+
+simulWeibull <- function(beta, theta, Tmax) {
+  f <- function(t) (beta/theta) * (t/theta)^(beta-1)
+  
+  M_val <- f(Tmax)
+  
+  return(simulPPi(f, Tmax, M_val))
+}
+Tmax=100
+
+
+
+
+```
+
+```{r}
+
+
+
+simul<-function(beta,Tmax){
+  ft<-function(t) {return(log(1+t))}
+  M_val<-ft(Tmax)
+  return(simulPPi(ft,Tmax,M_val))
+}
+
+
+simul1<-function(beta,Tmax){
+  ft<-function(t) {return(exp(t))}
+  M_val<-ft(Tmax)
+  return(simulPPi(ft,Tmax,M_val))
+}
+```
+
+## SImulation and plot
+
+```{r plot}
+Beta_val <- 1.0
+Theta_val <- 1
+Tmax_val <- 100
+PPSimu <- simulWeibull(Beta_val,Theta_val, Tmax_val)
+PPSimu_exp<-simul1(Beta_val,Tmax_val)
+
+par(mfrow=c(1,2))
+plot.PP(PPSimu)
+curve(Weibull_I(x, Beta_val, Theta_val), 
+      from = 0, to = Tmax_val, 
+      col = "red", lwd = 2, 
+      main = "")
+
+
+par(mfrow=c(1,2))
+plot.PP(PPSimu_exp)
+curve(log(1+x), 
+      from = 0, to = Tmax_val, 
+      col = "red", lwd = 2, 
+      main = "")
+
+```
+
+# Statistical Test
+
+## Crow
+
+```{r teststat}
+
+testCrow <- function(PP, Tmax, silent = FALSE)
+{
+  n <- length(PP)
+  
+  stat_test_Obs = 2 * sum(log(Tmax / PP)) 
+  
+  p_value <- pchisq(stat_test_Obs, 2 * n)
+  
+  if (!silent) {
+    print(paste("The Observed Crow Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
+    
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, Beta could be 1")
+    }
+  }
+
+  return(p_value)
+}
+
+
+
+
+
+```
+
+## Barlow
+
+```{r}
+
+testBarlow <- function(PP, Tmax, silent = FALSE)
+{
+  n = length(PP)
+  if (n < 4) return(NA) 
+  
+  d = floor(n/2)
+  
+  stat_test_Obs = ((n - d) * PP[d]) / (d * (PP[n] - PP[d]))
+  
+  p_value <- 1 - pf(stat_test_Obs, 2 * d, 2 * (n - d))
+  
+  if (!silent) {
+    print(paste("The Observed test Statistic is : ", stat_test_Obs))
+    print(paste("The p-value : ", p_value))
+    
+    if (p_value < 0.05) {
+      print("Conclusion: we reject H0 at level 5%, Beta is greater than 1")
+    } else {
+      print("Conclusion: we do not reject H0 at level 5%, data suggests Beta could be 1")
+    }
+  }
+
+  return(p_value)
+}
+
+```
+
+```{r, test execution}
+print("------Barlow------")
+testBarlow(PPSimu_exp,Tmax)
+
+print("------Crow------")
+testCrow(PPSimu_exp,Tmax)
+
+```
+
+# Power Comparaison
+
+```{r, power}
+plot_puissance <- function(Tmax, liste_beta, nsimu) {
+  plot(NULL, xlim=range(liste_beta), ylim=c(0,1), 
+       xlab="Beta", ylab="Power",
+       main="Crow vs Barlow")
+  
+  abline(h=0.05, col="red", lty=2)
+
+  for(b in liste_beta) {
+    
+    rejet_crow = 0
+    rejet_barlow = 0
+    
+    for(i in 1:nsimu) {
+      donnees <- simulWeibull(beta = b, theta = 1, Tmax = Tmax)
+      
+      p_c <- testCrow(donnees, Tmax, silent = TRUE)
+      p_b <- testBarlow(donnees, Tmax, silent = TRUE)
+      
+      if(p_c < 0.05) rejet_crow = rejet_crow + 1
+      if(p_b < 0.05) rejet_barlow = rejet_barlow + 1
+    }
+    
+    puissance_C = rejet_crow / nsimu
+    puissance_B = rejet_barlow / nsimu
+    
+    points(b, puissance_C, col="blue", pch=20) 
+    points(b, puissance_B, col="red", pch=20) 
+  }
+  
+  legend("bottomright", legend=c("Crow", "Barlow"), col=c("blue", "red"), pch=c(19, 17))
+}
+```
+
+```{r}
+betas_test <- c(seq(1, 1.5, by = 0.01))
+plot_puissance(Tmax = 200, betas_test, 200)
+```
+
+```{r}
+calcul_puissance_tmax <- function(Tmax_val, Beta_val, nsimu = 500) {
+  rejet_crow <- 0
+  rejet_barlow <- 0
+  
+  for(i in 1:nsimu) {
+    # Utilisation de TA fonction de simulation exponentielle
+    donnees <- simul(Beta_val, Tmax_val)
+    
+    # On vérifie qu'on a assez de pannes pour calculer Barlow (n >= 4)
+    if(length(donnees) >= 4) {
+      # Appel de TES fonctions de test
+      p_c <- testCrow(donnees, Tmax_val, silent = TRUE)
+      p_b <- testBarlow(donnees, Tmax_val, silent = TRUE)
+      
+      if(!is.na(p_c) && p_c < 0.05) rejet_crow <- rejet_crow + 1
+      if(!is.na(p_b) && p_b < 0.05) rejet_barlow <- rejet_barlow + 1
+    }
+  }
+  return(c(Crow = rejet_crow / nsimu, Barlow = rejet_barlow / nsimu))
+}
+```
+
+```{r}
+# Paramètres 
+liste_Tmax <- seq(10, 150, by = 20)
+Beta_fixe <- 0.05  # Une petite valeur pour voir la puissance monter lentement
+
+# Calcul des puissances
+res_tmax <- sapply(liste_Tmax, function(t) {
+  calcul_puissance_tmax(Tmax_val = t, Beta_val = Beta_fixe)
+})
+
+# Graphique
+plot(liste_Tmax, res_tmax["Crow", ], type="b", col="blue", pch=19, ylim=c(0,1),
+     xlab="Temps d'observation (Tmax)", 
+     ylab="Puissance (Taux de rejet de H0)",
+     main=paste("Puissance vs Tmax"))
+
+lines(liste_Tmax, res_tmax["Barlow", ], type="b", col="red", pch=17)
+
+# Seuil alpha (H0)
+abline(h=0.05, lty=2, col="black")
+
+legend("bottomright", legend=c("Crow", "Barlow"), 
+       col=c("blue", "red"), pch=c(19, 17), lty=1)
+```
