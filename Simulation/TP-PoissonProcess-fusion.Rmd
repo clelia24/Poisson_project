@@ -52,10 +52,13 @@ simulPPi <- function(lambda_fct, Tmax, M) {
 We define different intensity functions such that for $H_0 : \beta =1$ the intensity has a constant rate.
 
 ```{r intensities}
-Weibull_I <- function(x, beta, theta) (beta / theta) * (x / theta)^(beta - 1)
-I_exp    <- function(t, beta, theta) (1/50*theta) * exp((beta - 1) * t / 50*theta)
-I_sqrt <- function(t, beta, theta) (1/theta) * sqrt(1 + (beta - 1) * t / theta)
-I_log <- function(t, beta, theta) (1/theta) * (1 + (beta - 1) * log(1 + t / theta))
+Weibull_I <- function(x, beta, theta) {(beta / theta) * (x / theta)^(beta - 1)}
+
+I_sigm <- function(t, beta, theta) {1 + (beta - 1) / (1 + exp(-(t - theta)))}
+
+
+I_sqrt <- function(t, beta, theta){ (1/theta) * sqrt(1 + (beta - 1) * t / theta)}
+I_log <- function(t, beta, theta) {(1/theta) * (1 + (beta - 1) * log(1 + t / theta))}
 ```
 
 ## Simulation functions
@@ -64,26 +67,26 @@ We now define the function needed to simulate the PP for each intensity function
 
 ```{r simulations}
 simulWeibull <- function(beta, theta, Tmax) {
-  f     <- function(t) Weibull_I(t, beta, theta)
+  f     <- function(t) {Weibull_I(t, beta, theta)}
   M_val <- f(Tmax)
   return(simulPPi(f, Tmax, M_val))
 }
 
 
 simulLog <- function(beta, theta, Tmax) {
-  f     <- function(t) I_log(t, beta, theta)
+  f     <- function(t) {I_log(t, beta, theta)}
   M_val <- f(Tmax)
   return(simulPPi(f, Tmax, M_val))
 }
 
-simulExp <- function(beta, theta, Tmax) {
-  f     <- function(t) I_exp(t, beta, theta)
+simulSigm <- function(beta, theta, Tmax) {
+  f     <- function(t) {I_sigm(t, beta, theta)}
   M_val <- f(Tmax)
   return(simulPPi(f, Tmax, M_val))
 }
 
 simulSqrt <- function(beta, theta, Tmax) {
-  f     <- function(t) I_sqrt(t, beta, theta)
+  f     <- function(t) {I_sqrt(t, beta, theta)}
   M_val <- f(Tmax)
   return(simulPPi(f, Tmax, M_val))
 }
@@ -96,8 +99,8 @@ simulSqrt <- function(beta, theta, Tmax) {
 Let's see !
 
 ```{r plot}
-Beta_val  <- 1.5
-Theta_val <- 2
+Beta_val  <- 1.4
+Theta_val <- 1
 Tmax_val  <- 100
 
 par(mfrow = c(1, 2))
@@ -112,9 +115,9 @@ curve(I_log(x, Beta_val, Theta_val), 0, Tmax_val, col = "red", lwd = 2, main = "
 
 
 par(mfrow = c(1, 2))
-simE <- simulExp(Beta_val, Theta_val, Tmax_val)
-plot.PP(simE); title("Exp Process")
-curve(I_exp(x, Beta_val, Theta_val), 0, Tmax_val, col = "red", lwd = 2, main = "Exp Intensity")
+simSg <- simulSigm(Beta_val, Theta_val, Tmax_val)
+plot.PP(simSg); title("Sigmoid Process")
+curve(I_sigm(x, Beta_val, Theta_val), 0, Tmax_val, col = "red", lwd = 2, main = "Sigmoid Intensity")
 
 
 par(mfrow = c(1, 2))
@@ -203,8 +206,7 @@ testCrow(simEx, Tmax)
 
 ------------------------------------------------------------------------
 
-Power Analysis
-We now want to analyze our test’s power. To do so, we will first see how the tests respond to different values of $\beta$ and then to different values of $T_{\max}$.
+Power Analysis We now want to analyze our test’s power. To do so, we will first see how the tests respond to different values of $\beta$ and then to different values of $T_{\max}$.
 
 ## 1. Power as a function of Beta
 
@@ -238,14 +240,14 @@ plot_puissance_beta <- function(simul_func, liste_beta, Tmax, nsimu,
   abline(h = 0.05, col = "darkgrey", lty = 2)
   lines(liste_beta, puissances_C, col = "blue", lwd = 2, type = "b", pch = 19)
   lines(liste_beta, puissances_B, col = "red",  lwd = 2, type = "b", pch = 17)
-  legend("bottomright", legend = c("Crow", "Barlow"),
+  legend("topright", legend = c("Crow", "Barlow"),
          col = c("blue", "red"), lwd = 2, pch = c(19, 17), bty = "n")
 }
 ```
 
 ```{r run_power_beta, fig.width=10, fig.height=5}
-betas_test <- seq(1, 1.5, by = 0.1)
-nsimu      <- 100
+betas_test <- seq(1, 1.6, by = 0.1)
+nsimu      <- 20
 
 par(mfrow = c(2, 2))
 plot_puissance_beta(simulWeibull, betas_test, Tmax = 100, nsimu = nsimu,
@@ -258,8 +260,8 @@ plot_puissance_beta(simulLog, betas_test, Tmax = 100, nsimu = nsimu,
 plot_puissance_beta(simulSqrt, betas_test, Tmax = 100, nsimu = nsimu,
                     theta = 1, titre = "Sqrt")
 
-plot_puissance_beta(simulExp, betas_test, Tmax = 100, nsimu = nsimu,
-                    theta = 1, titre = "Exp")
+plot_puissance_beta(simulSigm, betas_test, Tmax = 100, nsimu = nsimu,
+                    theta = 1, titre = "Sigmoid")
 ```
 
 ------------------------------------------------------------------------
@@ -296,7 +298,7 @@ plot_puissance_tmax <- function(simul_func, liste_Tmax, beta_fixe, nsimu,
   abline(h = 0.05, col = "darkgrey", lty = 2)
   lines(liste_Tmax, puissances_C, col = "blue", lwd = 2, type = "b", pch = 19)
   lines(liste_Tmax, puissances_B, col = "red",  lwd = 2, type = "b", pch = 17)
-  legend("bottomright", legend = c("Crow", "Barlow"),
+  legend("topright", legend = c("Crow", "Barlow"),
          col = c("blue", "red"), lwd = 2, pch = c(19, 17), bty = "n")
 }
 ```
@@ -313,8 +315,8 @@ plot_puissance_tmax(simulWeibull, liste_Tmax, beta_fixe = beta_fixe,
 plot_puissance_tmax(simulLog, liste_Tmax, beta_fixe = beta_fixe,
                     nsimu = nsimu, theta = 1, titre = "Log")
 
-plot_puissance_tmax(simulExp, liste_Tmax, beta_fixe = beta_fixe,
-                    nsimu = nsimu, theta = 1, titre = "Exp")
+plot_puissance_tmax(simulSigm, liste_Tmax, beta_fixe = beta_fixe,
+                    nsimu = nsimu, theta = 1, titre = "Sigmoid")
 
 plot_puissance_tmax(simulSqrt, liste_Tmax, beta_fixe = beta_fixe,
                     nsimu = nsimu, theta = 1, titre = "Sqrt")
@@ -322,3 +324,34 @@ plot_puissance_tmax(simulSqrt, liste_Tmax, beta_fixe = beta_fixe,
 ```
 
 ------------------------------------------------------------------------
+
+# The sigmoid Function
+
+Crow and Barlow’s tests are designed to assess whether events accumulate progressively faster over the entire observation interval. When the underlying intensity follows a sigmoid shape, the process typically exhibits three phases: an initial flat period, a rapid increase, and a final flat period.
+
+The location of the transition point, denoted by \\theta, strongly influences the behavior of the tests:
+
+-   Small $\theta$ (early jump): Events are concentrated at the beginning of the interval and become sparse later. This pattern may resemble a decreasing intensity, which can lead the tests to incorrectly reject in the wrong direction.
+
+-   $\theta = T_{\max}/2$ (midpoint jump): The signal is mixed, with no clear dominance of either early or late accumulation, making the tests less decisive.
+
+-   Large $\theta$ (late jump): The process remains nearly flat for most of the interval, providing little evidence of any trend. As a result, the tests have low power.
+
+Overall, this behavior shows that Crow and Barlow’s tests implicitly rely on the assumption of a globally and smoothly increasing intensity. They are therefore sensitive to the shape of the alternative and may perform poorly when the true intensity deviates from this assumption.
+
+```{r, sigmoidpower}
+
+
+par(mfrow = c(2, 2))
+plot_puissance_beta(simulSigm, betas_test, Tmax = 100, nsimu = nsimu,
+                    theta = 1, titre = "Sigmoid, Theta = 1")
+
+plot_puissance_beta(simulSigm, betas_test, Tmax = 100, nsimu = nsimu,
+                    theta = 50, titre = "Sigmoid, Theta = 50")
+
+plot_puissance_beta(simulSigm, betas_test, Tmax = 100, nsimu = nsimu,
+                    theta = 100, titre = "Sigmoid, Theta = 100")
+
+
+
+```

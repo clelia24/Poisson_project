@@ -179,10 +179,13 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="intensity-functions">Intensity functions</h2>
 <p>We define different intensity functions such that for <span class="math inline">\(H_0 : \beta =1\)</span> the intensity has a constant rate.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>Weibull_I <span class="ot">&lt;-</span> <span class="cf">function</span>(x, beta, theta) (beta <span class="sc">/</span> theta) <span class="sc">*</span> (x <span class="sc">/</span> theta)<span class="sc">^</span>(beta <span class="sc">-</span> <span class="dv">1</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>I_exp    <span class="ot">&lt;-</span> <span class="cf">function</span>(t, beta, theta) (<span class="dv">1</span><span class="sc">/</span><span class="dv">50</span><span class="sc">*</span>theta) <span class="sc">*</span> <span class="fu">exp</span>((beta <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> t <span class="sc">/</span> <span class="dv">50</span><span class="sc">*</span>theta)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>I_sqrt <span class="ot">&lt;-</span> <span class="cf">function</span>(t, beta, theta) (<span class="dv">1</span><span class="sc">/</span>theta) <span class="sc">*</span> <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">+</span> (beta <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> t <span class="sc">/</span> theta)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>I_log <span class="ot">&lt;-</span> <span class="cf">function</span>(t, beta, theta) (<span class="dv">1</span><span class="sc">/</span>theta) <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">+</span> (beta <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">+</span> t <span class="sc">/</span> theta))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>Weibull_I <span class="ot">&lt;-</span> <span class="cf">function</span>(x, beta, theta) {(beta <span class="sc">/</span> theta) <span class="sc">*</span> (x <span class="sc">/</span> theta)<span class="sc">^</span>(beta <span class="sc">-</span> <span class="dv">1</span>)}</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>I_sigm <span class="ot">&lt;-</span> <span class="cf">function</span>(t, beta, theta) {<span class="dv">1</span> <span class="sc">+</span> (beta <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>(t <span class="sc">-</span> theta)))}</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>I_sqrt <span class="ot">&lt;-</span> <span class="cf">function</span>(t, beta, theta){ (<span class="dv">1</span><span class="sc">/</span>theta) <span class="sc">*</span> <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">+</span> (beta <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> t <span class="sc">/</span> theta)}</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>I_log <span class="ot">&lt;-</span> <span class="cf">function</span>(t, beta, theta) {(<span class="dv">1</span><span class="sc">/</span>theta) <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">+</span> (beta <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">+</span> t <span class="sc">/</span> theta))}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="simulation-functions" class="level2">
@@ -190,26 +193,26 @@ window.Quarto = {
 <p>We now define the function needed to simulate the PP for each intensity function</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>simulWeibull <span class="ot">&lt;-</span> <span class="cf">function</span>(beta, theta, Tmax) {</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  f     <span class="ot">&lt;-</span> <span class="cf">function</span>(t) <span class="fu">Weibull_I</span>(t, beta, theta)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  f     <span class="ot">&lt;-</span> <span class="cf">function</span>(t) {<span class="fu">Weibull_I</span>(t, beta, theta)}</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  M_val <span class="ot">&lt;-</span> <span class="fu">f</span>(Tmax)</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">simulPPi</span>(f, Tmax, M_val))</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>simulLog <span class="ot">&lt;-</span> <span class="cf">function</span>(beta, theta, Tmax) {</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  f     <span class="ot">&lt;-</span> <span class="cf">function</span>(t) <span class="fu">I_log</span>(t, beta, theta)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  f     <span class="ot">&lt;-</span> <span class="cf">function</span>(t) {<span class="fu">I_log</span>(t, beta, theta)}</span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  M_val <span class="ot">&lt;-</span> <span class="fu">f</span>(Tmax)</span>
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">simulPPi</span>(f, Tmax, M_val))</span>
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>simulExp <span class="ot">&lt;-</span> <span class="cf">function</span>(beta, theta, Tmax) {</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  f     <span class="ot">&lt;-</span> <span class="cf">function</span>(t) <span class="fu">I_exp</span>(t, beta, theta)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>simulSigm <span class="ot">&lt;-</span> <span class="cf">function</span>(beta, theta, Tmax) {</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  f     <span class="ot">&lt;-</span> <span class="cf">function</span>(t) {<span class="fu">I_sigm</span>(t, beta, theta)}</span>
 <span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  M_val <span class="ot">&lt;-</span> <span class="fu">f</span>(Tmax)</span>
 <span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">simulPPi</span>(f, Tmax, M_val))</span>
 <span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>simulSqrt <span class="ot">&lt;-</span> <span class="cf">function</span>(beta, theta, Tmax) {</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  f     <span class="ot">&lt;-</span> <span class="cf">function</span>(t) <span class="fu">I_sqrt</span>(t, beta, theta)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  f     <span class="ot">&lt;-</span> <span class="cf">function</span>(t) {<span class="fu">I_sqrt</span>(t, beta, theta)}</span>
 <span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  M_val <span class="ot">&lt;-</span> <span class="fu">f</span>(Tmax)</span>
 <span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">simulPPi</span>(f, Tmax, M_val))</span>
 <span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -219,8 +222,8 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="simulation-and-plot">Simulation and plot</h2>
 <p>Let’s see !</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>Beta_val  <span class="ot">&lt;-</span> <span class="fl">1.5</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>Theta_val <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>Beta_val  <span class="ot">&lt;-</span> <span class="fl">1.4</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>Theta_val <span class="ot">&lt;-</span> <span class="dv">1</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>Tmax_val  <span class="ot">&lt;-</span> <span class="dv">100</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
@@ -246,9 +249,9 @@ window.Quarto = {
 </div>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>simE <span class="ot">&lt;-</span> <span class="fu">simulExp</span>(Beta_val, Theta_val, Tmax_val)</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.PP</span>(simE); <span class="fu">title</span>(<span class="st">"Exp Process"</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(<span class="fu">I_exp</span>(x, Beta_val, Theta_val), <span class="dv">0</span>, Tmax_val, <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">main =</span> <span class="st">"Exp Intensity"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>simSg <span class="ot">&lt;-</span> <span class="fu">simulSigm</span>(Beta_val, Theta_val, Tmax_val)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.PP</span>(simSg); <span class="fu">title</span>(<span class="st">"Sigmoid Process"</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">curve</span>(<span class="fu">I_sigm</span>(x, Beta_val, Theta_val), <span class="dv">0</span>, Tmax_val, <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">main =</span> <span class="st">"Sigmoid Intensity"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -399,13 +402,13 @@ window.Quarto = {
 <span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">h =</span> <span class="fl">0.05</span>, <span class="at">col =</span> <span class="st">"darkgrey"</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
 <span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(liste_beta, puissances_C, <span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">19</span>)</span>
 <span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(liste_beta, puissances_B, <span class="at">col =</span> <span class="st">"red"</span>,  <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">17</span>)</span>
-<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">legend</span>(<span class="st">"bottomright"</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"Crow"</span>, <span class="st">"Barlow"</span>),</span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"Crow"</span>, <span class="st">"Barlow"</span>),</span>
 <span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>         <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"blue"</span>, <span class="st">"red"</span>), <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">pch =</span> <span class="fu">c</span>(<span class="dv">19</span>, <span class="dv">17</span>), <span class="at">bty =</span> <span class="st">"n"</span>)</span>
 <span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>betas_test <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fl">1.5</span>, <span class="at">by =</span> <span class="fl">0.1</span>)</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>nsimu      <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>betas_test <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fl">1.6</span>, <span class="at">by =</span> <span class="fl">0.1</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>nsimu      <span class="ot">&lt;-</span> <span class="dv">20</span></span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))</span>
 <span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_beta</span>(simulWeibull, betas_test, <span class="at">Tmax =</span> <span class="dv">100</span>, <span class="at">nsimu =</span> nsimu,</span>
@@ -418,8 +421,8 @@ window.Quarto = {
 <span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_beta</span>(simulSqrt, betas_test, <span class="at">Tmax =</span> <span class="dv">100</span>, <span class="at">nsimu =</span> nsimu,</span>
 <span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">theta =</span> <span class="dv">1</span>, <span class="at">titre =</span> <span class="st">"Sqrt"</span>)</span>
 <span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_beta</span>(simulExp, betas_test, <span class="at">Tmax =</span> <span class="dv">100</span>, <span class="at">nsimu =</span> nsimu,</span>
-<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>                    <span class="at">theta =</span> <span class="dv">1</span>, <span class="at">titre =</span> <span class="st">"Exp"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_beta</span>(simulSigm, betas_test, <span class="at">Tmax =</span> <span class="dv">100</span>, <span class="at">nsimu =</span> nsimu,</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>                    <span class="at">theta =</span> <span class="dv">1</span>, <span class="at">titre =</span> <span class="st">"Sigmoid"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -462,7 +465,7 @@ window.Quarto = {
 <span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">h =</span> <span class="fl">0.05</span>, <span class="at">col =</span> <span class="st">"darkgrey"</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
 <span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(liste_Tmax, puissances_C, <span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">19</span>)</span>
 <span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(liste_Tmax, puissances_B, <span class="at">col =</span> <span class="st">"red"</span>,  <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">17</span>)</span>
-<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">legend</span>(<span class="st">"bottomright"</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"Crow"</span>, <span class="st">"Barlow"</span>),</span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"Crow"</span>, <span class="st">"Barlow"</span>),</span>
 <span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a>         <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"blue"</span>, <span class="st">"red"</span>), <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">pch =</span> <span class="fu">c</span>(<span class="dv">19</span>, <span class="dv">17</span>), <span class="at">bty =</span> <span class="st">"n"</span>)</span>
 <span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -478,8 +481,8 @@ window.Quarto = {
 <span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_tmax</span>(simulLog, liste_Tmax, <span class="at">beta_fixe =</span> beta_fixe,</span>
 <span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nsimu =</span> nsimu, <span class="at">theta =</span> <span class="dv">1</span>, <span class="at">titre =</span> <span class="st">"Log"</span>)</span>
 <span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_tmax</span>(simulExp, liste_Tmax, <span class="at">beta_fixe =</span> beta_fixe,</span>
-<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nsimu =</span> nsimu, <span class="at">theta =</span> <span class="dv">1</span>, <span class="at">titre =</span> <span class="st">"Exp"</span>)</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_tmax</span>(simulSigm, liste_Tmax, <span class="at">beta_fixe =</span> beta_fixe,</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nsimu =</span> nsimu, <span class="at">theta =</span> <span class="dv">1</span>, <span class="at">titre =</span> <span class="st">"Sigmoid"</span>)</span>
 <span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_tmax</span>(simulSqrt, liste_Tmax, <span class="at">beta_fixe =</span> beta_fixe,</span>
 <span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nsimu =</span> nsimu, <span class="at">theta =</span> <span class="dv">1</span>, <span class="at">titre =</span> <span class="st">"Sqrt"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -493,6 +496,35 @@ window.Quarto = {
 </div>
 <hr>
 </section>
+</section>
+<section id="the-sigmoid-function" class="level1">
+<h1>The sigmoid Function</h1>
+<p>Crow and Barlow’s tests are designed to assess whether events accumulate progressively faster over the entire observation interval. When the underlying intensity follows a sigmoid shape, the process typically exhibits three phases: an initial flat period, a rapid increase, and a final flat period.</p>
+<p>The location of the transition point, denoted by \theta, strongly influences the behavior of the tests:</p>
+<ul>
+<li><p>Small <span class="math inline">\(\theta\)</span> (early jump): Events are concentrated at the beginning of the interval and become sparse later. This pattern may resemble a decreasing intensity, which can lead the tests to incorrectly reject in the wrong direction.</p></li>
+<li><p><span class="math inline">\(\theta = T_{\max}/2\)</span> (midpoint jump): The signal is mixed, with no clear dominance of either early or late accumulation, making the tests less decisive.</p></li>
+<li><p>Large <span class="math inline">\(\theta\)</span> (late jump): The process remains nearly flat for most of the interval, providing little evidence of any trend. As a result, the tests have low power.</p></li>
+</ul>
+<p>Overall, this behavior shows that Crow and Barlow’s tests implicitly rely on the assumption of a globally and smoothly increasing intensity. They are therefore sensitive to the shape of the alternative and may perform poorly when the true intensity deviates from this assumption.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_beta</span>(simulSigm, betas_test, <span class="at">Tmax =</span> <span class="dv">100</span>, <span class="at">nsimu =</span> nsimu,</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">theta =</span> <span class="dv">1</span>, <span class="at">titre =</span> <span class="st">"Sigmoid, Theta = 1"</span>)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_beta</span>(simulSigm, betas_test, <span class="at">Tmax =</span> <span class="dv">100</span>, <span class="at">nsimu =</span> nsimu,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">theta =</span> <span class="dv">50</span>, <span class="at">titre =</span> <span class="st">"Sigmoid, Theta = 50"</span>)</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_puissance_beta</span>(simulSigm, betas_test, <span class="at">Tmax =</span> <span class="dv">100</span>, <span class="at">nsimu =</span> nsimu,</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">theta =</span> <span class="dv">100</span>, <span class="at">titre =</span> <span class="st">"Sigmoid, Theta = 100"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="TP-PoissonProcess-fusion_files/figure-html/sigmoidpower-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 </section>
 
 </main>
