@@ -27,6 +27,8 @@ df<-data.frame(time = attr(danish,"times"),
 
 # Exploratory analysis
 
+We visualize our dataset and we apply some transformation to it to help the visualization and normalize it.
+
 ```{r}
 summary(df$claim)
 
@@ -39,6 +41,17 @@ hist(log(df$claim))
 
 
 
+```
+
+We extract a Poisson process from our dataset by subtracting the dates to get the interarrival times. We then create our Poisson process by the cumulative sum of the interarrival times
+
+```{r}
+
+df$delta_t <- c(NA, as.numeric(diff(df$time), units = "days"))
+df[1,3] <- 0
+df["new_times"]<-cumsum(df$delta_t)
+
+head(df)
 ```
 
 # Statistical Test on the dataset
@@ -107,13 +120,15 @@ testBarlow <- function(PP, Tmax, silent = FALSE)
 ```
 
 ```{r, test execution}
-Tmax= length(df$claim)
+
+PP <- df$new_times[-1]
+Tmax <- max(PP)
 
 print("------Barlow------")
-testBarlow(df$claim,Tmax)
+testBarlow(df$new_times,Tmax)
 
 print("------Crow------")
-testCrow(df$claim,Tmax)
+testCrow(PP,Tmax)
 
 ```
 
