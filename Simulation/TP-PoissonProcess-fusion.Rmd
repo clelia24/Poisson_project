@@ -318,19 +318,20 @@ testBarlow <- function(PP, Tmax, alternative="increasing",silent = FALSE)
 ```{r test_execution}
 Tmax <- 100
 set.seed(42)
-simEx <- simulWeibull(beta = 1.5, theta = 1, Tmax = Tmax)
+beta <-1.5
+simEx <- simulWeibull(beta = beta, theta = 1, Tmax = Tmax)
 
-print("------ Barlow ------")
+print(paste("------ Barlow ------Beta=", beta))
 testBarlow(simEx, Tmax)
 
-print("------ Crow ------")
+print(paste("------ Crow ------Beta=", beta))
 testCrow(simEx, Tmax)
 
 # Tests with other alternatives
-print("------ Barlow ------")
+print(paste("------ Barlow Decreasing------Beta=",beta) )
 testBarlow(simEx, Tmax, "decreasing")
 
-print("------ Crow ------")
+print(paste("------ Crow Decreasing------Beta=",beta) )
 testCrow(simEx, Tmax, "decreasing")
 ```
 
@@ -393,6 +394,8 @@ plot_puissance_beta(simulSqrt, betas_test, Tmax = 100, nsimu = nsimu,
 plot_puissance_beta(simulSigm, betas_test, Tmax = 100, nsimu = nsimu,
                     theta = 1, titre = "Sigmoid")
 ```
+
+As we can see, for the Weibull and square root intensity models, both Crow's and Barlow's tests are powerful. For the sigmoid intensity, neither test performs well, while for the logarithmic intensity, Crow's test is more powerful than Barlow's. This suggests that these two tests are primarily effective for smooth intensities with rapid growth.
 
 ------------------------------------------------------------------------
 
@@ -494,6 +497,7 @@ Now we are going to apply these homogeneity tests to the large fire insurance cl
 library(ismev)
 library(evd)
 library(tseries)
+library(evir)
 
 data(danish, package = "evir") # We load the dataset from the evir package
 
