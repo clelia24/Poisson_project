@@ -395,7 +395,9 @@ plot_puissance_beta(simulSigm, betas_test, Tmax = 100, nsimu = nsimu,
                     theta = 1, titre = "Sigmoid")
 ```
 
-As we can see, for the Weibull and square root intensity models, both Crow's and Barlow's tests are powerful. For the sigmoid intensity, neither test performs well, while for the logarithmic intensity, Crow's test is more powerful than Barlow's. This suggests that these two tests are primarily effective for smooth intensities with rapid growth.
+As we can see, for the Weibull and square root intensity models, both Crow's and Barlow's tests are powerful. A small variation in the β value impacts the p-value and the conclusion.
+
+Regarding the sigmoid intensity, neither test performs well. For the logarithmic intensity, Crow's test is more powerful than Barlow's though its power is still limited.
 
 ------------------------------------------------------------------------
 
@@ -455,6 +457,10 @@ plot_puissance_tmax(simulSqrt, liste_Tmax, beta_fixe = beta_fixe,
                     nsimu = nsimu, theta = 1, titre = "Sqrt")
 
 ```
+
+We now examine the power as a function of the observation windows. Hence we can see that for Weibull and Squared root intensity, a large observation window is not required for the tests to achieve high power. Consistent with the results for power as a function of β Crow's test outperforms Barlow's for the logarithmic intensity. Finally, for the sigmoid intensity the tests remain unreliable regardless of the observation window's length
+
+In summary, these results suggests that these two tests are primarily effective for smooth intensities with rapid growth.
 
 ------------------------------------------------------------------------
 
@@ -549,6 +555,14 @@ testCrow(PP,Tmax)
 ```
 
 Both tests reject the null hypothesis at level 5% : we conclude that the intensity function is not constant : the frequency of large fire insurance claim most likely increased between 1980 and 1990.
+
+# Conclusion:
+
+In conclusion, this project has successfully established the mathematical and numerical framework for the Crow and Barlow homogeneity tests. Our simulation results are entirely consistent with the power studies conducted by Bain et al. (1895), demonstrating that the tests maintain their prescribed significance levels under the null hypothesis while exhibiting high power against various alternatives. The reliability of these numerical implementations confirms that our model is robust for analyzing trend data in Poisson processes and aligns perfectly with established literature.
+
+The application of these tests to the historical dataset of large fire insurance claims in Denmark from 1980 to 1990 revealed a statistically significant increasing trend in event intensity. This observed "wear-out" effect in the frequency of major fires raises important environmental questions, as the acceleration of such claims could potentially be linked to the early manifestations of global warming and its impact on fire risk. These findings underscore the practical value of using Nonhomogeneous Poisson Processes (NHPP) to monitor and quantify real-world changes in environmental risks.
+
+Furthermore, we expanded the scope of our study by testing the framework against the alternative hypothesis of a decreasing intensity function. This additional analysis proved successful, showing that the methodology is versatile enough to detect not only deterioration but also improvements in system reliability or a reduction in event frequency. This flexibility ensures that the Crow and Barlow tests are comprehensive tools for trend analysis in any direction.
 
 ## References
 
